@@ -177,6 +177,8 @@ class RedBase(
                 return when_mentioned_or(*prefixes)(bot, message)
             return prefixes
 
+        kwargs["case_insensitive"] = True
+
         if "command_prefix" not in kwargs:
             kwargs["command_prefix"] = prefix_manager
 
@@ -723,6 +725,7 @@ class RedBase(
             or perms.manage_guild
             or await self.is_owner(ctx.author)
             or await self.is_admin(ctx.author)
+            or await self.is_mod(ctx.author)
         )
         if surpass_ignore:
             return True
