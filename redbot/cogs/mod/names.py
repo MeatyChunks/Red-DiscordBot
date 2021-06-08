@@ -19,9 +19,38 @@ class ModInfo(MixinMeta):
     Commands regarding names, userinfo, etc.
     """
 
-    async def get_names_and_nicks(self, user):
+    @commands.command()
+    async def clearnames(self, ctx: commands.Context):
+        """Clear your nickname and name history
+        
+        Removes your nickname and username history from `[p]names` and `[p]userinfo`
+        """
+
+        await self.config.user(ctx.author).past_names.clear()
+        await self.config.member(ctx.author).past_nicks.clear()
+        
+        await ctx.send("Your names and nicknames for this server have been cleared.")
+
+    async def get_names_and_nicks(self, user, ctx):
         names = await self.config.user(user).past_names()
         nicks = await self.config.member(user).past_nicks()
+        na = []
+        ni = []
+        if not await self.bot.is_mod(ctx.author):
+            for n in names:
+                hits = await self.bot.get_cog("Filter").filter_hits(n, ctx.channel)
+                if hits:
+                    na.append("Filtered")
+                else:
+                    na.append(n)
+            for n in nicks:
+                hits = await self.bot.get_cog("Filter").filter_hits(n, ctx.channel)
+                if hits:
+                    ni.append("Filtered")
+                else:
+                    ni.append(n)
+            names = na
+            nicks = ni
         if names:
             names = [escape_spoilers_and_mass_mentions(name) for name in names if name]
         if nicks:
@@ -180,7 +209,7 @@ class ModInfo(MixinMeta):
         is_special = member.id == 96130341705637888 and guild.id == 133049272517001216
 
         roles = member.roles[-1:0:-1]
-        names, nicks = await self.get_names_and_nicks(member)
+        names, nicks = await self.get_names_and_nicks(member, ctx)
 
         joined_at = member.joined_at if not is_special else special_date
         since_created = (ctx.message.created_at - member.created_at).days
@@ -296,7 +325,7 @@ class ModInfo(MixinMeta):
     @commands.command()
     async def names(self, ctx: commands.Context, *, member: discord.Member):
         """Show previous names and nicknames of a member."""
-        names, nicks = await self.get_names_and_nicks(member)
+        names, nicks = await self.get_names_and_nicks(member, ctx)
         msg = ""
         if names:
             msg += _("**Past 20 names**:")
