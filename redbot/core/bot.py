@@ -34,6 +34,7 @@ from typing import (
 )
 from types import MappingProxyType
 
+import aiohttp
 import discord
 from discord.ext import commands as dpy_commands
 from discord.ext.commands import when_mentioned_or
@@ -272,6 +273,8 @@ class Red(
         self._red_before_invoke_objs: Set[PreInvokeCoroutine] = set()
 
         self._deletion_requests: MutableMapping[int, asyncio.Lock] = weakref.WeakValueDictionary()
+
+        self.session: aiohttp.ClientSession = aiohttp.ClientSession()
 
     def set_help_formatter(self, formatter: commands.help.HelpFormatterABC):
         """
@@ -2343,6 +2346,8 @@ class Red(
     async def close(self):
         """Logs out of Discord and closes all connections."""
         await super().close()
+        if self.session and not self.session.closed:
+            await self.session.close()
         await _drivers.get_driver_class().teardown()
         try:
             if self.rpc_enabled:
